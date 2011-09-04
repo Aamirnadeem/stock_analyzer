@@ -1,3 +1,0 @@
-#!/usr/bin/python
-import * from symbol
-print get_short_ratio(MSFT)
