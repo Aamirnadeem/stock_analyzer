@@ -1,1 +1,161 @@
-test it out
+import sys,MySQLdb,datetime,re
+from symbol import *
+
+def main():
+    print_welcome_message()
+    arguments = get_parameters()
+    exchanges = parse_arguments(arguments)
+    cursor = create_tables()
+    pull_stocks(exchanges,cursor)
+    #confirm_stock_count()
+    end()
+def print_welcome_message():
+    print "Welcome to Jon Sudlow's NYSE stock harvester"
+
+def get_parameters():
+    arg_array = []
+    for arg in sys.argv: 
+        arg_array.append(arg)
+   # print arg_array[1:]
+    if(len(arg_array) == 0):
+        print "No Arguments Given: Sytnax python harvester -exchange <exchange_name>"
+    return arg_array[1:]
+
+
+def parse_arguments(arguments):
+    args = arguments
+    exchanges = []
+    num_count = 0
+    #find out the exchanges given as arguments
+    for exchange in args:
+        if exchange == '-exchange':
+            if(len(args) % 2 == 0):
+                exchanges.append(args[num_count + 1])
+            if(len(args) % 2 != 0):
+                print "You gave the exchange option, but you did not include the exchange"
+        num_count +=1
+    
+    if(len(exchanges) == 0):
+        print "No Exchange Given: syntax python harvester -exchange <exchange> \n"
+        exit(0)
+    print "[Info] *** these are the exchanges set for pulling"
+    print exchanges 
+    return exchanges
+
+
+def create_tables():
+    db_table = "stock_historyy;"
+    host = raw_input("Type in your host name/ip: \n")
+    user = raw_input("Type your user name: \n")
+    password = raw_input("Type your password: \n")
+    db = MySQLdb    
+    #check database connection
+    try:
+        db = MySQLdb.connect(host,user,password)
+        print "[Info] *** connected succesfully to database"
+    except:
+        print "there was a problem connecting to the database"
+        question = raw_input("Do you want to try again (y/n) \n")
+        if(question == "y"):
+            create_tables()
+    cursor = db.cursor()
+    query = "use " + db_table
+    
+    #check that system database table exists
+    try:
+        cursor.execute(query)
+        print "[Info] *** Correct Database Found"
+    except:
+        question2 = raw_input("Database not found, would you like harvester to create one for you? (y/n)")
+        if(question2 == "y"):
+            query = "create database " + db_table
+            cursor.execute(query)
+            print "try again"
+            create_tables()
+    #check tables
+    query = "show tables;"
+    tables = cursor.execute(query)
+    print "these are the tables"
+    print tables
+    if (tables == 0):
+        question3 = raw_input("No database tables exist: Would you like harvester to create the required system tables? (y/n)")
+        if(question3 == "y"):
+
+            table1 = "CREATE TABLE price_history (symbol varchar(10),price decimal(6,2),date varchar(50),PRIMARY KEY (symbol,date));"
+            table2 = "CREATE TABLE stock_watch (symbol varchar(10),price decimal(6,2),date varchar(60),PRIMARY KEY (symbol));"
+            cursor.execute(table1)
+            cursor.execute(table2)
+            print "now you have the right tables"
+    if(tables == 2):
+       print "Congrats you are already set up :)\n"
+    return cursor
+
+
+def pull_stocks(exchanges,cursor):
+    repos = exchanges
+    for exchange in repos:
+        if exchange == 'nyse':
+            print "[Info] *** Starting to Harvest NYSE \n"
+            import_stock_list('NYSE.txt',cursor)
+            print "[Info] **** FINISHED harvesting NYSE \n"
+            
+def get_now():
+    return datetime.datetime.now()
+
+def add_stock(symbol,cursor):
+    
+    price = get_price(symbol)
+    print price
+    print "\n"
+    query = query_builder('insert','price_history',[symbol,price,get_now()])
+    cursor.execute(query)
+
+def print_rows(rows):
+    for row in rows:
+        print row
+
+def import_stock_list(list_name,cursor):
+    symbol = open(list_name, 'r')
+    lines = symbol.readlines()
+
+    symbol_only = []
+    for line in lines:
+        first = re.split('\t|\r|\n',line)
+        symbol_only.append(first[0])
+    progress_count = 0.0
+    for symbol in symbol_only:
+        add_stock(symbol,cursor)
+        print "percentage finished:  \n"
+        progress =  progress_count / len(symbol_only)
+        print progress
+        
+        print "Adding:"
+        print symbol
+        progress_count += 1
+def query_builder(qtype,table,values=''):
+    if(qtype == 'insert'):
+        query = "insert into "
+        query += table
+        query += " values('"
+        for value in values:
+            query += str(value) + "','"
+        query = query[0:-2]
+        query += ");"
+        #print "the query is: " + query                                                                                                                                                                                                      
+        return query
+    if(qtype == 'select all'):
+        query = "select * from "
+        query += table
+        query += ";"
+        #print query                                                                                                                                                                                                                         
+        return query
+
+
+
+
+        
+def end():
+    print "Goodbye Thank you for using Sudlows NYSE stock harvester"
+
+
+main()
