@@ -1,0 +1,29 @@
+#!/usr/bin/python
+import argparse, MySQLdb
+import matplotlib.pyplot as stock_plot
+from symbol import *
+import database_classes
+
+def main():
+    print_welcome_message()
+    results = parse_args()
+    render_chart(results)
+
+def print_welcome_message():
+    print "Welcome to Charty stock chart viewing utility"
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', action='store', dest='symbol', help='Specify which symbol you would like to chart', required=True)
+    return parser.parse_args()
+
+
+def render_chart(results):
+    #x = 31 for days in month
+    x = 31
+    
+    y = (10,20)
+    #a = stock_plot.plot(x,y)
+    b = stock_plot.plot([1,2,3,4,5,6,7], [1.35,1.38,1.22,1.11,1.55,1.45,1.78], 'go-', label='line 1', linewidth=2)
+    stock_plot.show()
+main()

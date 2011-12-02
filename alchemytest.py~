@@ -1,0 +1,39 @@
+from sqlalchemy import *
+from base_class import *
+from sqlalchemy.orm import sessionmaker
+import datetime
+import MySQLdb
+
+
+engine = create_engine('mysql+mysqldb://root:jonjon@localhost[3000]/stock_history')
+Session = sessionmaker(bind=engine)
+metadata = MetaData()
+
+class Stock(Base):
+    __tablename__ = 'Stocks'
+
+    call_sign = Column(String, primary_key=True)
+    name = Column(String)
+    price = Column(Float)
+    date_added = Column(DateTime)    
+
+    def __init__(self,call_sign,name,price,date_added):
+        self.call_sign = call_sign
+        self.name = name
+        self.price = price
+        self.date_added = date_added
+
+    def __repr__(self):
+        return "<Stock('%s','%s','%s','%s')>" % (self.call_sign, self.name, self.price,self.date_added)
+
+
+Stock.metadata.create_all(engine)
+jon = Stock('KV.A','Kelvin Pharmaceuticals',29,datetime.datetime.now())
+
+session = Session()
+jon.metadata.create_all(engine)
+session.add(jon)
+session.commit()
+print jon.call_sign
+
+
