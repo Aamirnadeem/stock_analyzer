@@ -1,88 +1,68 @@
-#!/usr/bin/python
-
+#!/usr/bin/env=python
+import MySQLdb,datetime,re,argparse
 from symbol import *
-import datetime,MySQLdb,re
-#import MySQLdb
-#import re
+import database_classes
+from sqlalchemy.sql import select
+from datetime import date
 
-conn = MySQLdb.connect('localhost','root','jonjon','stock_history')
-cursor = conn.cursor()
+def main():
+    print_welcome_message()
+    results = parse_args()
+    analyze_multiple(results)
+def print_welcome_message():
+    print "Welcome to the Stock Analyzer"
 
-def get_now():
-    return datetime.datetime.now()
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e', action='store',dest='exchange',help='Specify which exchange you would like to harvest',required=True)
+    return parser.parse_args()
 
-def add_stock(symbol):
-    price = get_price(symbol)
-    query = query_builder('insert','price_history',[symbol,price,get_now()])    
-    cursor.execute(query)
+def analyze_multiple(results):
+    if(results.exchange == 'nyse'): pull_symbols('NYSE.txt')
 
-def watch_stock(symbol):
-    price = get_price(symbol)
-    query = query_builder('insert','stock_watch',[symbol,price,get_now()])
-    cursor.execute(query)
-
-def query_builder(qtype,table,values=''):
-    if(qtype == 'insert'):
-        query = "insert into "
-        query += table
-        query += " values('"
-        for value in values:
-            query += str(value) + "','"
-        query = query[0:-2]
-        query += ");"
-        #print "the query is: " + query
-        return query
-    if(qtype == 'select all'):
-        query = "select * from "
-        query += table
-        query += ";"
-        #print query
-        return query
-
-def get_watched_stocks():
-    query = query_builder('select all','stock_watch')
-    cursor.execute(query)
-    row = cursor.fetchall()
-    print_rows(row)
-def print_rows(rows):
-    for row in rows:
-        print row
-
-def import_stock_list(list_name):
-    symbol = open(list_name, 'r')
+def pull_symbols(symbol_list):
+    symbol = open(symbol_list, 'r')
     lines = symbol.readlines()
-    
     symbol_only = []
     for line in lines:
         first = re.split('\t|\r|\n',line)
         symbol_only.append(first[0])
-
+    progress_count = 0.0
     for symbol in symbol_only:
-        add_stock(symbol)
+        #calculate_multiple(symbol)
+        progress =  progress_count / len(symbol_only)
+        print "percentage finished: ", progress
+        print "Calculating Multiples: ", symbol
+        calculate_multiple(symbol)
+        progress_count += 1
+
+def calculate_multiple(symbol):
+    file_name = 'dead_list ' + str(date.today()) + '.txt'
+    deadlist = open(file_name, 'a' )
+    
+    result_list = []
+    call_sign = symbol
+    conn = database_classes.engine.connect()
+    s = select([database_classes.Stock.call_sign,database_classes.Stock.price,database_classes.Stock.eps], database_classes.Stock.call_sign.like(symbol)) 
+     
+    result = conn.execute(s)
+    #turn result object into list
+    for row in result:
+        result_list.append(row)
+    current_info = result_list[-1]
+    price = current_info[1]
+    eps = current_info[2]
+    
+    print "PRICE : ",price,"EPS: ",eps, "P/E RATIO: "
+    if(eps != 0): 
+        multiple = price/eps 
+    else: 
+        print "EPS == ZERO"
+
+    if(eps < 0):
+        print "adding stock to deadlist"
+        deadlist.write('%s %s %s \n' % (symbol,price,eps))
         
+    
 
-
-#commands for the stock analyzer system
-#######################################
-##Configure Commnads Below
-#
-#watch a stock
-#watch_stock('MSFT')
-#
-#add a stock
-#add_stock('MSFT')
-#get_watched_stocks();
-#import_stock_list('NYSE.txt')
-
-conn.close()
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axes3d, Axes3D #<-- Note the capitalization! 
-fig = plt.figure()
-
-ax = Axes3D(fig) #<-- Note the difference from your original code...
-
-X, Y, Z = axes3d.get_test_data(0.05)
-cset = ax.contour(X, Y, Z, 16, extend3d=True)
-ax.clabel(cset, fontsize=9, inline=1)
-plt.show()
+main()

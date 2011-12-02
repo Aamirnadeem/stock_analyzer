@@ -1,4 +1,4 @@
-import sys,MySQLdb,datetime,re
+import sys,MySQLdb,datetime,re,argparse
 from symbol import *
 
 def main():
@@ -98,7 +98,7 @@ def pull_stocks(exchanges,cursor):
             print "[Info] *** Starting to Harvest NYSE \n"
             import_stock_list('NYSE.txt',cursor)
             print "[Info] **** FINISHED harvesting NYSE \n"
-            
+    print "no exchange given. Default NYSE = -exchange nyse"
 def get_now():
     return datetime.datetime.now()
 
