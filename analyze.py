@@ -34,6 +34,7 @@ def pull_symbols(symbol_list):
         print "percentage finished: ", progress
         print "Calculating Multiples: ", symbol
         calculate_multiple(symbol)
+        calculate_alpha(symbol)
         progress_count += 1
 
 def calculate_multiple(symbol):
@@ -63,6 +64,10 @@ def calculate_multiple(symbol):
         print "adding stock to deadlist"
         deadlist.write('%s %s %s \n' % (symbol,price,eps))
         
-    
+def calculate_alpha(symbol):
+    call_sign = symbol
+    conn = database_classes.engine.connect()
+    s = select([database_classes.Stock.call_sign,database_classes.Stock.price,database_classes.Stock.eps], database_classes.Stock.call_sign.like(symbol))
+
 
 main()

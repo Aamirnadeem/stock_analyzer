@@ -1,6 +1,6 @@
 import MySQLdb,datetime,re,argparse
 from symbol import *
-import database_classes
+from database_classes import *
 
 def main():
     print_welcome_message()
@@ -37,14 +37,21 @@ def import_stock_list(list_name):
         print symbol
         progress_count += 1
 
+#what we do with each stock
 def add_stock(symbol):
+
+    #yahoo stock API Call
     price = get_price(symbol)
+
+    #yahoo stock API Call
     eps = get_earnings_per_share(symbol)
     print price , "\n"
     print "Eps: ",eps
     print "\n"
-    stock = database_classes.Stock(symbol,price,datetime.datetime.now(),eps)
-    database_classes.session.add(stock)
-    database_classes.session.commit()
+
+    #create a persistant database object, and populate that object with the values that we want to insert into the database
+    stock = Stock(symbol,price,datetime.datetime.now(),eps)
+    session.add(stock)
+    session.commit()
 
 main()
