@@ -139,7 +139,10 @@ def get_price_book_ratio(symbol):
        
 def get_short_ratio(symbol): 
     return __request(symbol, 's7')
-    
+
+
+def get_estimate_eps_next_year(symbol):
+    return __request(symbol, 'e8')
     
 def get_historical_prices(symbol, start_date, end_date):
     """
